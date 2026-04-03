@@ -1,0 +1,7 @@
+.claude/
+.github/
+tests/
+bunfig.toml
+bun.lock
+tsconfig.json
+models/
