@@ -44,11 +44,10 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: Setup Node
+      - name: Setup Node and upgrade npm
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
 
       - name: Upgrade npm
         run: npm install -g npm@latest
@@ -66,10 +65,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Publish to npm (Trusted Publishing via OIDC)
-        run: |
-          # Remove the placeholder _authToken setup-node injects so npm uses OIDC instead
-          sed -i '/registry.npmjs.org\/:_authToken/d' "$NPM_CONFIG_USERCONFIG"
-          npm publish --access public --provenance
+        run: npm publish --access public --provenance
 
       - name: Create and push version tag
         run: |
