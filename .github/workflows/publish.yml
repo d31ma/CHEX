@@ -66,9 +66,8 @@ jobs:
 
       - name: Publish to npm (Trusted Publishing via OIDC)
         run: |
-          # Write registry config without an auth token so npm triggers the OIDC exchange
           echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
-          npm publish --access public --provenance
+          npm publish --access public --provenance --loglevel=verbose 2>&1 | head -60
 
       - name: Create and push version tag
         run: |
