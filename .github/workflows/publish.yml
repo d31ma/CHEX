@@ -63,7 +63,9 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Publish to npm (Trusted Publishing via OIDC)
-        run: npm publish --access public --provenance --auth-type=oidc
+        run: |
+          npm config delete //registry.npmjs.org/:_authToken
+          npm publish --access public --provenance
 
       - name: Create and push version tag
         run: |
