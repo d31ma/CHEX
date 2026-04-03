@@ -3,28 +3,30 @@ declare module "@vyckr/chex" {
     export default class {
 
         /**
-         * Main method to convert JSON to TypeScript declaration
+         * Convert a JSON object to one or more exported TypeScript interface declarations.
+         * Nested objects are extracted as named interfaces ordered before the root.
          */
-        static generateDeclaration(json: any, interfaceName?: string): string
-    
+        static generateDeclaration(json: unknown, interfaceName?: string): string
+
         /**
-         * Sanitize property names for TypeScript
+         * Sanitize a JSON key into a valid TypeScript property name.
          */
         static sanitizePropertyName(key: string): string
 
         /**
-         * Utility method to parse JSON string and generate declaration
+         * Parse a JSON string and generate TypeScript interface declarations.
          */
         static fromJsonString(jsonString: string, interfaceName?: string): string
 
         /**
-         * Utility method to generate declaration from object
+         * Generate TypeScript interface declarations from a plain object.
          */
-        static fromObject(obj: any, interfaceName?: string): string
+        static fromObject(obj: unknown, interfaceName?: string): string
 
         /**
-         * Utility method to validate data
+         * Validate a data object against the JSON schema for the given collection.
+         * Loads and caches the schema on first use.
          */
-        static validateData<T extends Record<string, any>>(collection: string, data: T): Promise<T>
+        static validateData<T extends Record<string, unknown>>(collection: string, data: T): Promise<T>
     }
 }

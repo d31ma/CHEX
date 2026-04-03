@@ -1,0 +1,13 @@
+{
+    "^name$": "^[A-Za-z]+ [A-Za-z]+$",
+    "age": -0,
+    "active": false,
+    "nickname?": "anonymous",
+    "address": {
+        "city": "",
+        "country": ""
+    },
+    "tags": [""],
+    "scores": [-0],
+    "meta": { "": "" }
+}
