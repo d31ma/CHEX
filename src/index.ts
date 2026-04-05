@@ -14,6 +14,9 @@ export default class Generator {
     if (typeof json !== 'object' || json === null) {
       throw new Error('Input must be a valid JSON object');
     }
+    if (!/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(interfaceName)) {
+      throw new Error('Invalid interface name: must be a valid TypeScript identifier');
+    }
 
     const collected = new Map<string, string>();
     const body = Generator.buildProperties(json as Record<string, unknown>, 0, collected);
@@ -214,6 +217,10 @@ export default class Generator {
    */
   static async validateData<T extends Record<string, unknown>>(collection: string, data: T): Promise<T> {
 
+    if (!/^[a-zA-Z0-9_-]+$/.test(collection)) {
+      throw new Error('Invalid collection name');
+    }
+
     let schema: Record<string, unknown> = {};
 
     if (this.collectionSchemas.has(collection)) {
@@ -224,15 +231,18 @@ export default class Generator {
         schema = res.default as Record<string, unknown>;
         this.collectionSchemas.set(collection, schema);
       } catch (error) {
-        throw new Error(`Failed to load schema for collection '${collection}': ${error}`);
+        console.error(`Schema load error for '${collection}':`, error);
+        throw new Error('Failed to load schema for the specified collection');
       }
     }
+
+    const truncate = (s: string, n = 100): string => s.length > n ? s.slice(0, n) + '...' : s;
 
     const validateObject = (data: Record<string, unknown>, schema: Record<string, unknown>, path?: string): Record<string, unknown> => {
 
       for (const dataKey in data) {
-        if (!(dataKey in schema) && !(`^${dataKey}$` in schema) && !(`${dataKey}?` in schema)) {
-          throw new Error(`Property '${dataKey}' does not exist in the '${collection}' collection schema`);
+        if (!(dataKey in schema) && !(`${dataKey}?` in schema)) {
+          throw new Error(`Property '${truncate(dataKey)}' does not exist in the '${truncate(collection)}' collection schema`);
         }
       }
 
@@ -251,36 +261,64 @@ export default class Generator {
 
         schemaKey = isNullable ? schemaKey.replace('?', '') : schemaKey;
 
+        // Detect { type, pattern } validator descriptor — a schema value that is an
+        // object whose only keys are "type" and/or "pattern" with string values.
+        const isDescriptor = (
+          typeof schemaValue === 'object' &&
+          !Array.isArray(schemaValue) &&
+          schemaValue !== null &&
+          Object.keys(schemaValue as object).length > 0 &&
+          Object.keys(schemaValue as object).every(k => k === 'type' || k === 'pattern') &&
+          ('type' in (schemaValue as object) || 'pattern' in (schemaValue as object))
+        );
+
+        if (isDescriptor) {
+          const descriptor = schemaValue as { type?: string; pattern?: string };
+          const actualType = typeof dataValue;
+
+          if (descriptor.type && actualType !== descriptor.type && !isNullable) {
+            throw new Error(
+              `Type mismatch for '${truncate(fullPath)}' in '${truncate(collection)}' collection: ` +
+              `expected '${descriptor.type}' but got '${actualType}'`
+            );
+          }
+
+          if (!valueIsDefined && !isNullable) {
+            throw new Error(`Property '${truncate(fullPath)}' cannot be null or undefined in '${truncate(collection)}' collection`);
+          }
+
+          if (descriptor.pattern && valueIsDefined) {
+            if (descriptor.pattern.length > 500) {
+              throw new Error(`Regex pattern for '${truncate(fullPath)}' in '${truncate(collection)}' collection exceeds maximum allowed length`);
+            }
+            let regEx: RegExp;
+            try {
+              regEx = new RegExp(descriptor.pattern);
+            } catch (e) {
+              throw new Error(`Invalid RegEx pattern for '${truncate(fullPath)}' in '${truncate(collection)}' collection`);
+            }
+            if (!regEx.test(dataValue as string)) {
+              throw new Error(`RegEx pattern fails for property '${truncate(fullPath)}' in '${truncate(collection)}' collection`);
+            }
+          }
+
+          continue;
+        }
+
         const expectedType = typeof schemaValue;
         const actualType = typeof dataValue;
 
-        const hasRegex = schemaKey.startsWith('^') && schemaKey.endsWith('$') && expectedType === 'string';
-
-        let regEx: RegExp | undefined;
-
-        try {
-          if (hasRegex) regEx = new RegExp(schemaValue as string);
-        } catch (e) {
-          throw new Error(`Invalid RegEx pattern for '${fullPath}' in '${collection}' collection`);
-        }
-
-        schemaKey = hasRegex ? schemaKey.replace('^', '').replace('$', '') : schemaKey;
-
-        const hasDefaultValue = (!Object.is(schemaValue, '') || !Object.is(schemaValue, -0) || Array.isArray(schemaValue)) && !hasRegex;
+        const hasDefaultValue = (!Object.is(schemaValue, '') || !Object.is(schemaValue, -0) || Array.isArray(schemaValue));
 
         if (actualType !== expectedType && !isNullable) {
           throw new Error(
-            `Type mismatch for '${fullPath}' in '${collection}' collection: ` +
+            `Type mismatch for '${truncate(fullPath)}' in '${truncate(collection)}' collection: ` +
             `expected '${expectedType}' but got '${actualType}'`
           );
         }
 
         if (!valueIsDefined && !isNullable) {
-          throw new Error(`Property '${fullPath}' cannot be null or undefined in '${collection}' collection`);
-        }
-
-        if (valueIsDefined && hasRegex && !regEx!.test(dataValue as string)) {
-          throw new Error(`RegEx pattern fails for property '${fullPath}' in '${collection}' collection`);
+          throw new Error(`Property '${truncate(fullPath)}' cannot be null or undefined in '${truncate(collection)}' collection`);
         }
 
         if (!valueIsDefined && isNullable && hasDefaultValue) {
@@ -304,7 +342,7 @@ export default class Generator {
             for (const [k, v] of Object.entries(dataValue as Record<string, unknown>)) {
               if (typeof v !== typeof value) {
                 throw new Error(
-                  `Type mismatch for '${fullPath}.${k}' in '${collection}' collection: ` +
+                  `Type mismatch for '${truncate(fullPath)}.${truncate(k)}' in '${truncate(collection)}' collection: ` +
                   `expected '${typeof value}' but got '${typeof v}'`
                 );
               }
@@ -320,7 +358,7 @@ export default class Generator {
           for (const dataType of dataTypes) {
             if (!schemaTypes.includes(dataType)) {
               throw new Error(
-                `Type mismatch for '${fullPath}' in '${collection}' collection: ` +
+                `Type mismatch for '${truncate(fullPath)}' in '${truncate(collection)}' collection: ` +
                 `'${dataType}' is not included in [${schemaTypes.join(',')}]`
               );
             }

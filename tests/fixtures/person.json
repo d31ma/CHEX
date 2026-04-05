@@ -1,5 +1,5 @@
 {
-    "^name$": "^[A-Za-z]+ [A-Za-z]+$",
+    "name": { "type": "string", "pattern": "^[A-Za-z]+ [A-Za-z]+$" },
     "age": -0,
     "active": false,
     "nickname?": "anonymous",

@@ -43,6 +43,22 @@ describe('generateDeclaration', () => {
     it('throws when a property value is null without ?', () => {
       expect(() => Gen.generateDeclaration({ name: null })).toThrow("use '?' for nullable properties");
     });
+
+    it('throws for an interface name with injection payload', () => {
+      expect(() => Gen.generateDeclaration({ foo: '' }, 'X {} export const evil = () => {}; export interface Y')).toThrow('Invalid interface name');
+    });
+
+    it('throws for an empty interface name', () => {
+      expect(() => Gen.generateDeclaration({ foo: '' }, '')).toThrow('Invalid interface name');
+    });
+
+    it('accepts a valid PascalCase interface name', () => {
+      expect(() => Gen.generateDeclaration({ foo: '' }, 'MyInterface')).not.toThrow();
+    });
+
+    it('accepts an interface name with $ prefix', () => {
+      expect(() => Gen.generateDeclaration({ foo: '' }, '$Special')).not.toThrow();
+    });
   });
 
   describe('flat primitives', () => {
@@ -307,7 +323,11 @@ describe('validateData', () => {
 
   it('throws when the schema file does not exist', () => {
     return expect(Gen.validateData('nonexistent', { x: 1 })).rejects.toThrow(
-      "Failed to load schema for collection 'nonexistent'"
+      'Failed to load schema for the specified collection'
     );
+  });
+
+  it('throws for an invalid collection name (path traversal attempt)', () => {
+    return expect(Gen.validateData('../../../etc/passwd', {})).rejects.toThrow('Invalid collection name');
   });
 });
