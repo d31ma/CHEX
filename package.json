@@ -1,6 +1,6 @@
 {
   "name": "@delma/chex",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "main": "./src/index.ts",
   "types": "./src/types/index.d.ts",
   "devDependencies": {
@@ -19,7 +19,8 @@
     "url": "git+https://github.com/Chidelma/CHEX.git"
   },
   "scripts": {
-    "test": "bun test ./tests/index.ts"
+    "test": "bun test ./tests/index.ts",
+    "typecheck": "tsc --noEmit"
   },
   "license": "MIT",
   "keywords": [
