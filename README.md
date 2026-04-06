@@ -14,7 +14,7 @@ CHEX is a TypeScript utility for generating type declarations from JSON schema f
 ### Installation
 
 ```sh
-bun add @vyckr/chex
+bun add @delma/chex
 ```
 ## Schema Format
 
