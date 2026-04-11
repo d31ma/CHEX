@@ -175,6 +175,18 @@ describe('generateDeclaration', () => {
       expect(result).toContain('export interface DocPart1 {');
     });
 
+    it('resolves anyOf primitives to a union type', () => {
+      const result = Gen.generateDeclaration({ value: { anyOf: ['', 0] } });
+      expect(result).toContain('value: string | number;');
+    });
+
+    it('resolves anyOf objects to named interfaces joined by union', () => {
+      const result = Gen.generateDeclaration({ payload: { anyOf: [{ id: '' }, { code: 0 }] } }, 'Event');
+      expect(result).toContain('payload: PayloadOption0 | PayloadOption1;');
+      expect(result).toContain('export interface PayloadOption0 {');
+      expect(result).toContain('export interface PayloadOption1 {');
+    });
+
     it('resolves enum strings to a literal union', () => {
       const result = Gen.generateDeclaration({ dir: { enum: ['north', 'south'] } });
       expect(result).toContain('dir: "north" | "south";');
@@ -329,5 +341,173 @@ describe('validateData', () => {
 
   it('throws for an invalid collection name (path traversal attempt)', () => {
     return expect(Gen.validateData('../../../etc/passwd', {})).rejects.toThrow('Invalid collection name');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateData — enum descriptor
+// ---------------------------------------------------------------------------
+
+describe('validateData (enum)', () => {
+  const validStatus = () => ({
+    direction: 'north',
+    priority: 2,
+    label: 'active',
+    tag: null,
+  });
+
+  it('passes when all enum values are valid', async () => {
+    const result = await Gen.validateData('status', validStatus());
+    expect(result.direction).toBe('north');
+    expect(result.priority).toBe(2);
+    expect(result.label).toBe('active');
+  });
+
+  it('throws when a string value is not in the enum', () => {
+    const data = { ...validStatus(), direction: 'northwest' };
+    return expect(Gen.validateData('status', data)).rejects.toThrow(
+      "Value for 'direction' in 'status' collection must be one of: \"north\", \"south\", \"east\", \"west\""
+    );
+  });
+
+  it('throws when a number value is not in the enum', () => {
+    const data = { ...validStatus(), priority: 99 };
+    return expect(Gen.validateData('status', data)).rejects.toThrow(
+      "Value for 'priority' in 'status' collection must be one of: 1, 2, 3"
+    );
+  });
+
+  it('throws when a type+enum field has the wrong type', () => {
+    const data = { ...validStatus(), label: 42 as unknown as string };
+    return expect(Gen.validateData('status', data)).rejects.toThrow(
+      "Type mismatch for 'label' in 'status' collection: expected 'string' but got 'number'"
+    );
+  });
+
+  it('throws when a type+enum field has a value outside the enum', () => {
+    const data = { ...validStatus(), label: 'pending' };
+    return expect(Gen.validateData('status', data)).rejects.toThrow(
+      "Value for 'label' in 'status' collection must be one of: \"active\", \"inactive\""
+    );
+  });
+
+  it('skips enum check for a null nullable enum field', async () => {
+    const data = { ...validStatus(), tag: null };
+    const result = await Gen.validateData('status', data);
+    expect((result as Record<string, unknown>).tag).toBeNull();
+  });
+
+  it('validates a non-null value against a nullable enum field', async () => {
+    const data = { ...validStatus(), tag: 'a' };
+    const result = await Gen.validateData('status', data);
+    expect((result as Record<string, unknown>).tag).toBe('a');
+  });
+
+  it('throws when a non-null nullable enum field has an invalid value', () => {
+    const data = { ...validStatus(), tag: 'z' };
+    return expect(Gen.validateData('status', data)).rejects.toThrow(
+      "Value for 'tag' in 'status' collection must be one of: \"a\", \"b\", \"c\""
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateData — number range, string length, multipleOf
+// ---------------------------------------------------------------------------
+
+describe('validateData (numeric range + string length)', () => {
+  const validMeasure = () => ({
+    score: 50,
+    temperature: 20,
+    quantity: 10,
+    username: 'alice',
+    code: 'AB12',
+  });
+
+  it('passes when all constrained values are valid', async () => {
+    const result = await Gen.validateData('measure', validMeasure());
+    expect(result.score).toBe(50);
+  });
+
+  // minimum / maximum
+  it('passes at the minimum boundary', async () => {
+    const result = await Gen.validateData('measure', { ...validMeasure(), score: 0 });
+    expect(result.score).toBe(0);
+  });
+
+  it('passes at the maximum boundary', async () => {
+    const result = await Gen.validateData('measure', { ...validMeasure(), score: 100 });
+    expect(result.score).toBe(100);
+  });
+
+  it('throws when value is below minimum', () => {
+    return expect(Gen.validateData('measure', { ...validMeasure(), score: -1 })).rejects.toThrow(
+      "Value for 'score' in 'measure' collection must be >= 0"
+    );
+  });
+
+  it('throws when value is above maximum', () => {
+    return expect(Gen.validateData('measure', { ...validMeasure(), score: 101 })).rejects.toThrow(
+      "Value for 'score' in 'measure' collection must be <= 100"
+    );
+  });
+
+  // exclusiveMinimum
+  it('throws when value equals the exclusiveMinimum', () => {
+    return expect(Gen.validateData('measure', { ...validMeasure(), temperature: -273.15 })).rejects.toThrow(
+      "Value for 'temperature' in 'measure' collection must be > -273.15"
+    );
+  });
+
+  it('passes when value is above the exclusiveMinimum', async () => {
+    const result = await Gen.validateData('measure', { ...validMeasure(), temperature: -273.14 });
+    expect(result.temperature).toBe(-273.14);
+  });
+
+  // multipleOf
+  it('passes when value is a multiple', async () => {
+    const result = await Gen.validateData('measure', { ...validMeasure(), quantity: 25 });
+    expect(result.quantity).toBe(25);
+  });
+
+  it('throws when value is not a multiple', () => {
+    return expect(Gen.validateData('measure', { ...validMeasure(), quantity: 7 })).rejects.toThrow(
+      "Value for 'quantity' in 'measure' collection must be a multiple of 5"
+    );
+  });
+
+  // minLength / maxLength
+  it('passes at the minLength boundary', async () => {
+    const result = await Gen.validateData('measure', { ...validMeasure(), username: 'abc' });
+    expect(result.username).toBe('abc');
+  });
+
+  it('throws when string is shorter than minLength', () => {
+    return expect(Gen.validateData('measure', { ...validMeasure(), username: 'ab' })).rejects.toThrow(
+      "Value for 'username' in 'measure' collection must have length >= 3"
+    );
+  });
+
+  it('throws when string is longer than maxLength', () => {
+    return expect(Gen.validateData('measure', { ...validMeasure(), username: 'a'.repeat(21) })).rejects.toThrow(
+      "Value for 'username' in 'measure' collection must have length <= 20"
+    );
+  });
+
+  it('passes when string length equals both minLength and maxLength', async () => {
+    const result = await Gen.validateData('measure', { ...validMeasure(), code: 'XY99' });
+    expect(result.code).toBe('XY99');
+  });
+
+  it('throws when exact-length field is too short', () => {
+    return expect(Gen.validateData('measure', { ...validMeasure(), code: 'AB1' })).rejects.toThrow(
+      "Value for 'code' in 'measure' collection must have length >= 4"
+    );
+  });
+
+  it('throws when exact-length field is too long', () => {
+    return expect(Gen.validateData('measure', { ...validMeasure(), code: 'AB123' })).rejects.toThrow(
+      "Value for 'code' in 'measure' collection must have length <= 4"
+    );
   });
 });

@@ -1,4 +1,4 @@
-declare module "@vyckr/chex" {
+declare module "@delma/chex" {
 
     export default class {
 
