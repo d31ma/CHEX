@@ -1,0 +1,6 @@
+{
+    "direction": { "enum": ["north", "south", "east", "west"] },
+    "priority": { "enum": [1, 2, 3] },
+    "label": { "type": "string", "enum": ["active", "inactive"] },
+    "tag?": { "enum": ["a", "b", "c"] }
+}

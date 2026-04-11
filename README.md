@@ -38,6 +38,23 @@ Use the `{ "type", "pattern" }` descriptor object:
 { "email": { "type": "string", "pattern": "^[a-z]+@[a-z]+\\.[a-z]+$" } }
 ```
 
+### Enum-constrained fields
+
+Use the `{ "enum": [...] }` descriptor to restrict a field to a fixed set of allowed values:
+
+```json
+{ "direction": { "enum": ["north", "south", "east", "west"] } }
+{ "priority": { "enum": [1, 2, 3] } }
+```
+
+Combine with `"type"` to enforce both a type and an allowed-values constraint:
+
+```json
+{ "status": { "type": "string", "enum": ["active", "inactive"] } }
+```
+
+`generateDeclaration` maps enum descriptors to TypeScript literal union types (`"north" | "south" | ...`). `validateData` throws if the data value is not one of the listed members.
+
 ### Nested objects and records
 
 ```json

@@ -122,6 +122,12 @@ export default class Generator {
         .join(' & ');
     }
 
+    if ('anyOf' in obj && Array.isArray(obj['anyOf'])) {
+      return (obj['anyOf'] as unknown[])
+        .map((v, i) => Generator.inferType(v, depth, collected, `${contextName}Option${i}`))
+        .join(' | ');
+    }
+
     if ('enum' in obj && Array.isArray(obj['enum'])) {
       return Generator.inferEnumType(obj['enum']);
     }
@@ -261,19 +267,34 @@ export default class Generator {
 
         schemaKey = isNullable ? schemaKey.replace('?', '') : schemaKey;
 
-        // Detect { type, pattern } validator descriptor — a schema value that is an
-        // object whose only keys are "type" and/or "pattern" with string values.
+        // Detect a validator descriptor — an object whose keys are a subset of
+        // { type, pattern, enum, minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf, minLength, maxLength }.
+        const DESCRIPTOR_KEYS = new Set([
+          'type', 'pattern', 'enum',
+          'minimum', 'maximum', 'exclusiveMinimum', 'exclusiveMaximum', 'multipleOf',
+          'minLength', 'maxLength',
+        ]);
         const isDescriptor = (
           typeof schemaValue === 'object' &&
           !Array.isArray(schemaValue) &&
           schemaValue !== null &&
           Object.keys(schemaValue as object).length > 0 &&
-          Object.keys(schemaValue as object).every(k => k === 'type' || k === 'pattern') &&
-          ('type' in (schemaValue as object) || 'pattern' in (schemaValue as object))
+          Object.keys(schemaValue as object).every(k => DESCRIPTOR_KEYS.has(k))
         );
 
         if (isDescriptor) {
-          const descriptor = schemaValue as { type?: string; pattern?: string };
+          const descriptor = schemaValue as {
+            type?: string;
+            pattern?: string;
+            enum?: unknown[];
+            minimum?: number;
+            maximum?: number;
+            exclusiveMinimum?: number;
+            exclusiveMaximum?: number;
+            multipleOf?: number;
+            minLength?: number;
+            maxLength?: number;
+          };
           const actualType = typeof dataValue;
 
           if (descriptor.type && actualType !== descriptor.type && !isNullable) {
@@ -299,6 +320,42 @@ export default class Generator {
             }
             if (!regEx.test(dataValue as string)) {
               throw new Error(`RegEx pattern fails for property '${truncate(fullPath)}' in '${truncate(collection)}' collection`);
+            }
+          }
+
+          if (descriptor.enum && valueIsDefined) {
+            if (!descriptor.enum.includes(dataValue)) {
+              throw new Error(
+                `Value for '${truncate(fullPath)}' in '${truncate(collection)}' collection must be one of: ` +
+                descriptor.enum.map(v => JSON.stringify(v)).join(', ')
+              );
+            }
+          }
+
+          if (valueIsDefined && typeof dataValue === 'number') {
+            if (descriptor.minimum !== undefined && dataValue < descriptor.minimum) {
+              throw new Error(`Value for '${truncate(fullPath)}' in '${truncate(collection)}' collection must be >= ${descriptor.minimum}`);
+            }
+            if (descriptor.maximum !== undefined && dataValue > descriptor.maximum) {
+              throw new Error(`Value for '${truncate(fullPath)}' in '${truncate(collection)}' collection must be <= ${descriptor.maximum}`);
+            }
+            if (descriptor.exclusiveMinimum !== undefined && dataValue <= descriptor.exclusiveMinimum) {
+              throw new Error(`Value for '${truncate(fullPath)}' in '${truncate(collection)}' collection must be > ${descriptor.exclusiveMinimum}`);
+            }
+            if (descriptor.exclusiveMaximum !== undefined && dataValue >= descriptor.exclusiveMaximum) {
+              throw new Error(`Value for '${truncate(fullPath)}' in '${truncate(collection)}' collection must be < ${descriptor.exclusiveMaximum}`);
+            }
+            if (descriptor.multipleOf !== undefined && dataValue % descriptor.multipleOf !== 0) {
+              throw new Error(`Value for '${truncate(fullPath)}' in '${truncate(collection)}' collection must be a multiple of ${descriptor.multipleOf}`);
+            }
+          }
+
+          if (valueIsDefined && typeof dataValue === 'string') {
+            if (descriptor.minLength !== undefined && (dataValue as string).length < descriptor.minLength) {
+              throw new Error(`Value for '${truncate(fullPath)}' in '${truncate(collection)}' collection must have length >= ${descriptor.minLength}`);
+            }
+            if (descriptor.maxLength !== undefined && (dataValue as string).length > descriptor.maxLength) {
+              throw new Error(`Value for '${truncate(fullPath)}' in '${truncate(collection)}' collection must have length <= ${descriptor.maxLength}`);
             }
           }
 

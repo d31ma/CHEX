@@ -1,0 +1,7 @@
+{
+    "score": { "type": "number", "minimum": 0, "maximum": 100 },
+    "temperature": { "type": "number", "exclusiveMinimum": -273.15 },
+    "quantity": { "type": "number", "multipleOf": 5 },
+    "username": { "type": "string", "minLength": 3, "maxLength": 20 },
+    "code": { "type": "string", "minLength": 4, "maxLength": 4 }
+}
