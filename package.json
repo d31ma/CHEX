@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Chidelma/CHEX.git"
+    "url": "git+https://github.com/d31ma/CHEX.git"
   },
   "scripts": {
     "test": "bun test ./tests/index.ts",
@@ -31,6 +31,6 @@
   ],
   "author": "Chidelma",
   "bugs": {
-    "url": "https://github.com/Chidelma/CHEX/issues"
+    "url": "https://github.com/d31ma/CHEX/issues"
   }
 }
