@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url';
+
 export default class Generator {
 
   private static readonly INDENT = '    ';
@@ -5,6 +7,38 @@ export default class Generator {
   private static readonly SCHEMA_DIR = typeof window !== "undefined" ? '.' : process.env.SCHEMA_DIR;
 
   private static readonly collectionSchemas: Map<string, Record<string, unknown>> = new Map();
+
+  private static normalizeSchemaDir(schemaDir: string): string {
+    if (schemaDir.startsWith('file:')) {
+      return fileURLToPath(schemaDir);
+    }
+
+    if (/^\/[A-Za-z]:\//.test(schemaDir)) {
+      return schemaDir.slice(1);
+    }
+
+    return schemaDir;
+  }
+
+  private static getSchemaPath(collection: string): string {
+    if (!this.SCHEMA_DIR) {
+      throw new Error('SCHEMA_DIR is not configured');
+    }
+
+    const schemaDir = this.normalizeSchemaDir(this.SCHEMA_DIR).replace(/[\\/]+$/, '');
+    return `${schemaDir}/${collection}.json`;
+  }
+
+  private static async loadCollectionSchema(collection: string): Promise<Record<string, unknown>> {
+    const schemaPath = this.getSchemaPath(collection);
+
+    if (typeof Bun !== 'undefined' && typeof window === 'undefined') {
+      return await Bun.file(schemaPath).json() as Record<string, unknown>;
+    }
+
+    const res = await import(schemaPath);
+    return res.default as Record<string, unknown>;
+  }
 
   /**
    * Main method to convert JSON to TypeScript declarations.
@@ -233,8 +267,7 @@ export default class Generator {
       schema = this.collectionSchemas.get(collection)!;
     } else {
       try {
-        const res = await import(`${this.SCHEMA_DIR}/${collection}.json`);
-        schema = res.default as Record<string, unknown>;
+        schema = await this.loadCollectionSchema(collection);
         this.collectionSchemas.set(collection, schema);
       } catch (error) {
         console.error(`Schema load error for '${collection}':`, error);
