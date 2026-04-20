@@ -5,7 +5,8 @@
   "types": "./src/types/index.d.ts",
   "devDependencies": {
     "@types/bun": "^1.2.19",
-    "@types/node": "^20.4.2"
+    "@types/node": "^20.4.2",
+    "typescript": "^5.9.2"
   },
   "bin": {
     "chex.generate": "./src/generator"
