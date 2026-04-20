@@ -8,6 +8,7 @@
         "sourceMap": true,
         "experimentalDecorators": true,
         "pretty": true,
+        // Temporary workaround for overlapping bun-types and @types/node declarations during release verification.
         "skipLibCheck": true,
         "noFallthroughCasesInSwitch": true,
         "noImplicitReturns": true,
