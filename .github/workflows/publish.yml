@@ -34,7 +34,7 @@ jobs:
         run: bun run typecheck
 
       - name: Run tests
-        run: bun test ./tests/index.test.ts
+        run: bun test --isolate --parallel ./tests/index.test.ts
 
   blackbox-config:
     name: Detect blackbox configuration
