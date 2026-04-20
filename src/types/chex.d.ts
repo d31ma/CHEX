@@ -1,4 +1,4 @@
-declare module "@delma/chex" {
+declare module "@d31ma/chex" {
 
     export default class {
 

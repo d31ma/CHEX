@@ -1,5 +1,8 @@
 .claude/
 .github/
+.env
+.env.*
+!.env.example
 tests/
 bunfig.toml
 bun.lock
