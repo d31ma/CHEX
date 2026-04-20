@@ -117,4 +117,4 @@ jobs:
             bun install --frozen-lockfile
           fi
 
-          bun test ./chex --timeout 120000
+          bun test chex/*.test.mjs --timeout 120000
