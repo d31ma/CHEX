@@ -1,6 +1,6 @@
 {
-    "direction": { "enum": ["north", "south", "east", "west"] },
-    "priority": { "enum": [1, 2, 3] },
-    "label": { "type": "string", "enum": ["active", "inactive"] },
-    "tag?": { "enum": ["a", "b", "c"] }
+    "direction": "^(north|south|east|west)$",
+    "priority": "^[123]$",
+    "label": "^(active|inactive)$",
+    "tag?": "^[abc]$"
 }

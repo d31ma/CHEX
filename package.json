@@ -1,40 +1,53 @@
 {
   "name": "@d31ma/chex",
-  "version": "0.4.2",
-  "main": "./src/index.ts",
-  "types": "./src/types/index.d.ts",
-  "devDependencies": {
-    "@types/bun": "^1.2.19",
-    "@types/node": "^20.4.2",
-    "typescript": "^5.9.2"
-  },
-  "bin": {
-    "chex.generate": "./src/generator"
-  },
+  "version": "26.18.27",
+  "description": "Regex-driven JSON schema validation and TypeScript declaration generation for Bun",
+  "main": "./src/index.js",
+  "types": "./types/index.d.ts",
   "type": "module",
-  "peerDependencies": {
-    "typescript": "^5.0.0"
+  "bin": {
+    "chex.generate": "./src/cli/generate-declarations.js"
+  },
+  "files": [
+    "src/",
+    "types/",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "bun test ./tests/",
+    "test:watch": "bun test --watch ./tests/",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc",
+    "prepublishOnly": "bun run build && bun test ./tests/"
+  },
+  "engines": {
+    "bun": ">=1.2.0"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/d31ma/CHEX.git"
   },
+  "homepage": "https://github.com/d31ma/CHEX#readme",
+  "bugs": {
+    "url": "https://github.com/d31ma/CHEX/issues"
+  },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   },
-  "scripts": {
-    "test": "bun test ./tests/index.test.ts",
-    "typecheck": "tsc --noEmit"
-  },
   "license": "MIT",
   "keywords": [
-    "typescript",
+    "javascript",
     "bun",
     "validation",
-    "data"
+    "schema",
+    "regex",
+    "typescript",
+    "declarations"
   ],
   "author": "Chidelma",
-  "bugs": {
-    "url": "https://github.com/d31ma/CHEX/issues"
+  "devDependencies": {
+    "@types/bun": "^1.2.19",
+    "typescript": "^5.9.2"
   }
 }
