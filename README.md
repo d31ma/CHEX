@@ -1,12 +1,13 @@
 # CHEX
 
-CHEX is a TypeScript utility for generating type declarations from JSON schema files and validating data against those schemas. It is built to work with Bun and supports schema-driven validation and automatic interface generation.
+CHEX is a JavaScript utility for generating type declarations from JSON schema files and validating data against those schemas. It is built to work with Bun and supports schema-driven validation and automatic interface generation.
 
 ## Features
 
 - **Generate TypeScript interfaces from JSON schemas**
-- **Validate data against collection schemas**
-- **Supports nullable fields, regex validation, and default values**
+- **Validate data against collection schemas using regex patterns**
+- **All leaf values are regex patterns — one format, no ambiguity**
+- **Supports nullable fields (`?`), nested objects, arrays, and records**
 - **Automatic scanning and generation of `.d.ts` files for all schemas in a directory**
 
 ## Getting Started
@@ -32,55 +33,59 @@ https://docs.github.com/packages/using-github-packages-with-your-projects-ecosys
 ```sh
 bun add @d31ma/chex
 ```
+
 ## Schema Format
 
-### Primitive fields
+Every leaf value in a CHEX schema is a **regex pattern string**. Data values are coerced to strings and tested against the pattern. Append `?` to a key to mark it nullable.
+
+### Primitive fields (regex patterns)
 
 ```json
-{ "age": 0, "active": false, "label": "" }
+{ "age": "^[0-9]+$", "active": "^(true|false)$", "label": "^.+$" }
 ```
 
-### Nullable fields with defaults
+### Nullable fields
+
+Append `?` to the key name. If the data value is `null` or `undefined`, validation is skipped:
 
 ```json
-{ "nickname?": "anonymous" }
+{ "nickname?": "^[a-zA-Z0-9_]+$" }
 ```
 
-### Regex-validated fields
+### Nested objects
 
-Use the `{ "type", "pattern" }` descriptor object:
-
-```json
-{ "email": { "type": "string", "pattern": "^[a-z]+@[a-z]+\\.[a-z]+$" } }
-```
-
-### Enum-constrained fields
-
-Use the `{ "enum": [...] }` descriptor to restrict a field to a fixed set of allowed values:
-
-```json
-{ "direction": { "enum": ["north", "south", "east", "west"] } }
-{ "priority": { "enum": [1, 2, 3] } }
-```
-
-Combine with `"type"` to enforce both a type and an allowed-values constraint:
-
-```json
-{ "status": { "type": "string", "enum": ["active", "inactive"] } }
-```
-
-`generateDeclaration` maps enum descriptors to TypeScript literal union types (`"north" | "south" | ...`). `validateData` throws if the data value is not one of the listed members.
-
-### Nested objects and records
+Nested objects are validated recursively — each leaf value is still a regex pattern:
 
 ```json
 {
-  "address": { "city": "", "country": "" },
-  "meta": { "": "" }
+  "address": {
+    "city": "^[A-Za-z]+$",
+    "country": "^[A-Za-z]+$"
+  }
 }
 ```
 
-The empty-string key `""` marks a `Record<string, V>` type.
+### Arrays
+
+An array contains a single regex pattern. Every element of the data array is tested against it:
+
+```json
+{ "tags": ["^[a-z]+$"] }
+```
+
+### Records
+
+An object is treated as a `Record<string, string>` type if its single key starts with `^`, which marks the key itself as the key regex. The value is the value regex:
+
+```json
+{ "meta": { "^[a-zA-Z_]+$": "^.+$" } }
+```
+
+This lets you constrain keys too — for example, numeric keys:
+
+```json
+{ "scores": { "^[0-9]+$": "^(100|[1-9]?[0-9])$" } }
+```
 
 ## Security
 
@@ -94,7 +99,7 @@ The empty-string key `""` marks a `Record<string, V>` type.
 
 - Collection names passed to `validateData` are validated against `^[a-zA-Z0-9_-]+$`. Path traversal strings like `../../../etc/passwd` throw `Invalid collection name` immediately.
 - Interface names passed to `generateDeclaration` must be valid TypeScript identifiers (`^[a-zA-Z_$][a-zA-Z0-9_$]*$`). Injection payloads throw `Invalid interface name`.
-- Regex patterns in `{ type, pattern }` descriptors are limited to 500 characters. Patterns exceeding this limit throw rather than risking CPU exhaustion.
+- Regex patterns in schema values are limited to 500 characters. Patterns exceeding this limit throw rather than risking CPU exhaustion.
 
 ## License
 

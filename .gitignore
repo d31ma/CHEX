@@ -1,2 +1,23 @@
 node_modules
 .env
+
+# Build artifacts (TypeScript declarations generated from JSDoc)
+types/
+
+# Graphify
+.graphify_*
+graphify-out/cache/
+graphify-out/converted/
+graphify-out/transcripts/
+graphify-out/manifest.json
+graphify-out/.graphify_python
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+.codex/
+.gemini/
+.github/copilot-instructions.md
+
+# Untrack markdown except README
+*.md
+!README.md

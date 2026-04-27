@@ -1,19 +1,20 @@
 {
-    "compilerOptions": {
-        "strict": true,
-        "outDir": "bin",
-        "target": "ESNext",
-        "module": "ES2022",
-        "moduleResolution": "node",
-        "sourceMap": true,
-        "experimentalDecorators": true,
-        "pretty": true,
-        // Temporary workaround for overlapping bun-types and @types/node declarations during release verification.
-        "skipLibCheck": true,
-        "noFallthroughCasesInSwitch": true,
-        "noImplicitReturns": true,
-        "forceConsistentCasingInFileNames": true,
-        "types": ["bun-types", "node"],
-        "isolatedModules": true
-    }
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "outDir": "./types",
+    "rootDir": "./src",
+    "moduleResolution": "bundler",
+    "target": "esnext",
+    "module": "esnext",
+    "strict": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "types": ["bun-types"]
+  },
+  "include": ["src/**/*.js"],
+  "exclude": ["node_modules", "tests", "types", "graphify-out"]
 }
