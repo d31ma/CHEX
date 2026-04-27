@@ -65,12 +65,10 @@ function validateLeaf(dataValue, pattern, fullPath, collection) {
  * @returns {Record<string, unknown>}
  */
 function validateObject(data, schema, collection, path) {
-  // Reject data properties not declared in the schema.
+  // Reject data properties not declared in the schema. Schema keys may carry
+  // a trailing `?` for nullability; data keys never do, so check both forms.
   for (const dataKey in data) {
-    if (
-      !(dataKey in schema) &&
-      !(sanitizePropertyName(dataKey) + '?' in schema)
-    ) {
+    if (!(dataKey in schema) && !(`${dataKey}?` in schema)) {
       throw new ValidationError(
         `Property '${truncate(dataKey)}' does not exist in the '${truncate(collection)}' collection schema`
       );
@@ -80,9 +78,12 @@ function validateObject(data, schema, collection, path) {
   for (const schemaKey in schema) {
     const schemaValue = schema[schemaKey];
     const isNullable = schemaKey.endsWith('?');
-    const cleanKey = sanitizePropertyName(schemaKey);
-    const dataValue = data[cleanKey];
-    const fullPath = path ? `${path}.${cleanKey}` : cleanKey;
+    // Use the raw key (sigil stripped) to index `data`. Use the sanitized
+    // key — which may be quoted for non-identifier names — only for display.
+    const dataKey = isNullable ? schemaKey.slice(0, -1) : schemaKey;
+    const displayKey = sanitizePropertyName(schemaKey);
+    const dataValue = data[dataKey];
+    const fullPath = path ? `${path}.${displayKey}` : displayKey;
     const valueIsDefined = dataValue !== null && dataValue !== undefined;
 
     // ── Leaf: regex pattern string ──────────────────────────────────

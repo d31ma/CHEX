@@ -50,7 +50,7 @@ export function fromJsonString(jsonString, interfaceName) {
   try {
     parsed = JSON.parse(jsonString);
   } catch (error) {
-    const detail = error instanceof Error ? error.message : 'Unknown error';
+    const detail = error instanceof Error ? error.message : String(error);
     throw new InvalidInputError(`Invalid JSON: ${detail}`);
   }
   return generateDeclaration(parsed, interfaceName);

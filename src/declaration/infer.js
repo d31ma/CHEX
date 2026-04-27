@@ -104,7 +104,7 @@ export function inferObjectType(obj, depth, collected, contextName) {
   if (Object.keys(obj).length === 0) return 'Record<string, unknown>';
 
   if (isRecordType(obj)) {
-    // Record descriptor: { "": ["keyRegex", "valueRegex"] }
+    // Record descriptor: { "^keyRegex$": "^valueRegex$" }
     // Both key and value regexes resolve to TypeScript `string`.
     return 'Record<string, string>';
   }

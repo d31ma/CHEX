@@ -33,13 +33,16 @@ export function sanitizePropertyName(key) {
 
 /**
  * Convert a sanitized property name to PascalCase for use as a generated
- * interface name.
+ * interface name. Handles separators that pass `sanitizePropertyName` but
+ * aren't valid in identifiers (hyphens, spaces, underscores).
  * @param {string} name
  * @returns {string}
  */
 export function toPascalCase(name) {
   const clean = name.replace(/"/g, '');
-  return clean.charAt(0).toUpperCase() + clean.slice(1);
+  const parts = clean.split(/[-_\s]+/).filter(Boolean);
+  if (parts.length === 0) return clean;
+  return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
 }
 
 /**

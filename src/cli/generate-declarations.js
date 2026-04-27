@@ -43,12 +43,12 @@ try {
 
   let written = 0;
   for (const filePath of scannedFiles) {
-    const fileName = filePath.split('/').pop()?.replace('.json', '');
+    const fileName = filePath.split('/').pop()?.replace(/\.json$/, '');
     if (!fileName) continue;
 
     const schema = await Bun.file(`${cwd}/${filePath}`).json();
     const generated = Gen.generateDeclaration(schema, fileName);
-    await Bun.write(`${cwd}/${filePath.replace('.json', '.d.ts')}`, generated);
+    await Bun.write(`${cwd}/${filePath.replace(/\.json$/, '.d.ts')}`, generated);
     written++;
   }
 
