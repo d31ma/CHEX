@@ -32,9 +32,6 @@
   "bugs": {
     "url": "https://github.com/d31ma/CHEX/issues"
   },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  },
   "license": "MIT",
   "keywords": [
     "javascript",
