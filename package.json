@@ -15,11 +15,12 @@
     "README.md"
   ],
   "scripts": {
-    "test": "bun test ./tests/",
-    "test:watch": "bun test --watch ./tests/",
+    "test": "bun test ./tests/unit",
+    "test:blackbox": "bun run build && bun test ./tests/blackbox --timeout 120000",
+    "test:watch": "bun test --watch ./tests/unit",
     "typecheck": "tsc --noEmit",
     "build": "tsc",
-    "prepublishOnly": "bun run build && bun test ./tests/"
+    "prepublishOnly": "bun run test && bun run test:blackbox"
   },
   "engines": {
     "bun": ">=1.2.0"
